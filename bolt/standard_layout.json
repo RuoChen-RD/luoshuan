@@ -1,0 +1,1157 @@
+[
+  {
+    "id": "A01",
+    "type": "bolt",
+    "x": 347,
+    "y": 280,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.262131,
+      "centerOffsetRatio": 0.273333,
+      "shadowImbalance": 11.526316,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "A02",
+    "type": "bolt",
+    "x": 459,
+    "y": 281,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.296709,
+      "centerOffsetRatio": 0.072086,
+      "shadowImbalance": 1.684211,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "A03",
+    "type": "bolt",
+    "x": 575,
+    "y": 285,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.261015,
+      "centerOffsetRatio": 0.036722,
+      "shadowImbalance": 1.659574,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "A04",
+    "type": "bolt",
+    "x": 690,
+    "y": 288,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.281651,
+      "centerOffsetRatio": 0.089155,
+      "shadowImbalance": 2.171429,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "A05",
+    "type": "bolt",
+    "x": 797,
+    "y": 296,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.268265,
+      "centerOffsetRatio": 0.139562,
+      "shadowImbalance": 2.982143,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "A06",
+    "type": "bolt",
+    "x": 910,
+    "y": 302,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.374233,
+      "centerOffsetRatio": 0.117405,
+      "shadowImbalance": 1.552448,
+      "blackRatio": 0.805839,
+      "blueRatio": 0.194161
+    }
+  },
+  {
+    "id": "A07",
+    "type": "bolt",
+    "x": 1016,
+    "y": 304,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.396542,
+      "centerOffsetRatio": 0.041225,
+      "shadowImbalance": 1.59854,
+      "blackRatio": 0.815789,
+      "blueRatio": 0.184211
+    }
+  },
+  {
+    "id": "A08",
+    "type": "bolt",
+    "x": 1124,
+    "y": 313,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.228109,
+      "centerOffsetRatio": 0.062824,
+      "shadowImbalance": 2.015152,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "A09",
+    "type": "bolt",
+    "x": 1228,
+    "y": 318,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.350251,
+      "centerOffsetRatio": 0.071902,
+      "shadowImbalance": 1.44697,
+      "blackRatio": 0.778638,
+      "blueRatio": 0.221362
+    }
+  },
+  {
+    "id": "A10",
+    "type": "bolt",
+    "x": 1331,
+    "y": 321,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.346905,
+      "centerOffsetRatio": 0.077476,
+      "shadowImbalance": 1.780952,
+      "blackRatio": 0.801562,
+      "blueRatio": 0.198437
+    }
+  },
+  {
+    "id": "A11",
+    "type": "bolt",
+    "x": 1430,
+    "y": 325,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.339654,
+      "centerOffsetRatio": 0.098067,
+      "shadowImbalance": 2.121495,
+      "blackRatio": 0.764516,
+      "blueRatio": 0.235484
+    }
+  },
+  {
+    "id": "B01",
+    "type": "bolt",
+    "x": 323,
+    "y": 348,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.313441,
+      "centerOffsetRatio": 0.201831,
+      "shadowImbalance": 2.44186,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "B02",
+    "type": "bolt",
+    "x": 445,
+    "y": 356,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.306191,
+      "centerOffsetRatio": 0.136761,
+      "shadowImbalance": 2.519481,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "B03",
+    "type": "bolt",
+    "x": 568,
+    "y": 362,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.290574,
+      "centerOffsetRatio": 0.15302,
+      "shadowImbalance": 3.15873,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "B04",
+    "type": "bolt",
+    "x": 682,
+    "y": 363,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.312883,
+      "centerOffsetRatio": 0.141144,
+      "shadowImbalance": 2.0,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "B05",
+    "type": "bolt",
+    "x": 798,
+    "y": 371,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.41662,
+      "centerOffsetRatio": 0.091804,
+      "shadowImbalance": 1.520833,
+      "blackRatio": 0.779817,
+      "blueRatio": 0.220183
+    }
+  },
+  {
+    "id": "B06",
+    "type": "bolt",
+    "x": 912,
+    "y": 375,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.419967,
+      "centerOffsetRatio": 0.074246,
+      "shadowImbalance": 1.426667,
+      "blackRatio": 0.81201,
+      "blueRatio": 0.18799
+    }
+  },
+  {
+    "id": "B07",
+    "type": "bolt",
+    "x": 1026,
+    "y": 379,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.3971,
+      "centerOffsetRatio": 0.028507,
+      "shadowImbalance": 1.25641,
+      "blackRatio": 0.772291,
+      "blueRatio": 0.227709
+    }
+  },
+  {
+    "id": "B08",
+    "type": "bolt",
+    "x": 1138,
+    "y": 384,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.389849,
+      "centerOffsetRatio": 0.072152,
+      "shadowImbalance": 1.503759,
+      "blackRatio": 0.870523,
+      "blueRatio": 0.129477
+    }
+  },
+  {
+    "id": "B09",
+    "type": "bolt",
+    "x": 1250,
+    "y": 390,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.388176,
+      "centerOffsetRatio": 0.20241,
+      "shadowImbalance": 2.425926,
+      "blackRatio": 0.834037,
+      "blueRatio": 0.165963
+    }
+  },
+  {
+    "id": "B10",
+    "type": "bolt",
+    "x": 1356,
+    "y": 395,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.393753,
+      "centerOffsetRatio": 0.172682,
+      "shadowImbalance": 2.09375,
+      "blackRatio": 0.910987,
+      "blueRatio": 0.089013
+    }
+  },
+  {
+    "id": "B11",
+    "type": "bolt",
+    "x": 1460,
+    "y": 400,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.233687,
+      "centerOffsetRatio": 0.098885,
+      "shadowImbalance": 2.432836,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "C01",
+    "type": "bolt",
+    "x": 309,
+    "y": 428,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.354713,
+      "centerOffsetRatio": 0.064955,
+      "shadowImbalance": 1.825,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "C02",
+    "type": "bolt",
+    "x": 433,
+    "y": 439,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.330731,
+      "centerOffsetRatio": 0.176504,
+      "shadowImbalance": 3.125,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "C03",
+    "type": "bolt",
+    "x": 556,
+    "y": 438,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.498048,
+      "centerOffsetRatio": 0.083399,
+      "shadowImbalance": 1.661017,
+      "blackRatio": 0.807269,
+      "blueRatio": 0.192731
+    }
+  },
+  {
+    "id": "C04",
+    "type": "bolt",
+    "x": 681,
+    "y": 445,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.47295,
+      "centerOffsetRatio": 0.074628,
+      "shadowImbalance": 1.180412,
+      "blackRatio": 0.825935,
+      "blueRatio": 0.174065
+    }
+  },
+  {
+    "id": "C05",
+    "type": "bolt",
+    "x": 803,
+    "y": 451,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.279978,
+      "centerOffsetRatio": 0.088828,
+      "shadowImbalance": 1.860215,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "C06",
+    "type": "bolt",
+    "x": 919,
+    "y": 455,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.300056,
+      "centerOffsetRatio": 0.093791,
+      "shadowImbalance": 2.162162,
+      "blackRatio": 0.994444,
+      "blueRatio": 0.005556
+    }
+  },
+  {
+    "id": "C07",
+    "type": "bolt",
+    "x": 1038,
+    "y": 458,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.440045,
+      "centerOffsetRatio": 0.066157,
+      "shadowImbalance": 1.329193,
+      "blackRatio": 0.845963,
+      "blueRatio": 0.154037
+    }
+  },
+  {
+    "id": "C08",
+    "type": "bolt",
+    "x": 1152,
+    "y": 458,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.530396,
+      "centerOffsetRatio": 0.218669,
+      "shadowImbalance": 3.22807,
+      "blackRatio": 0.617043,
+      "blueRatio": 0.382957
+    }
+  },
+  {
+    "id": "C09",
+    "type": "bolt",
+    "x": 1268,
+    "y": 465,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.451757,
+      "centerOffsetRatio": 0.084183,
+      "shadowImbalance": 1.9375,
+      "blackRatio": 0.851942,
+      "blueRatio": 0.148058
+    }
+  },
+  {
+    "id": "C10",
+    "type": "bolt",
+    "x": 1378,
+    "y": 474,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.281651,
+      "centerOffsetRatio": 0.097809,
+      "shadowImbalance": 3.070175,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "C11",
+    "type": "bolt",
+    "x": 1486,
+    "y": 471,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.395984,
+      "centerOffsetRatio": 0.160165,
+      "shadowImbalance": 2.925532,
+      "blackRatio": 0.895978,
+      "blueRatio": 0.104022
+    }
+  },
+  {
+    "id": "D01",
+    "type": "bolt",
+    "x": 280,
+    "y": 525,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.345789,
+      "centerOffsetRatio": 0.371798,
+      "shadowImbalance": 14.75,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "D02",
+    "type": "bolt",
+    "x": 418,
+    "y": 525,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.394311,
+      "centerOffsetRatio": 0.046661,
+      "shadowImbalance": 1.437956,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "D03",
+    "type": "bolt",
+    "x": 547,
+    "y": 528,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.388734,
+      "centerOffsetRatio": 0.065127,
+      "shadowImbalance": 1.623188,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "D04",
+    "type": "bolt",
+    "x": 675,
+    "y": 532,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.524819,
+      "centerOffsetRatio": 0.020105,
+      "shadowImbalance": 1.256039,
+      "blackRatio": 0.886911,
+      "blueRatio": 0.113089
+    }
+  },
+  {
+    "id": "D05",
+    "type": "bolt",
+    "x": 802,
+    "y": 541,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.345789,
+      "centerOffsetRatio": 0.148489,
+      "shadowImbalance": 2.768293,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "D06",
+    "type": "bolt",
+    "x": 926,
+    "y": 544,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.326269,
+      "centerOffsetRatio": 0.127797,
+      "shadowImbalance": 2.544304,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "D07",
+    "type": "bolt",
+    "x": 1050,
+    "y": 545,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.496933,
+      "centerOffsetRatio": 0.08745,
+      "shadowImbalance": 1.485714,
+      "blackRatio": 0.743169,
+      "blueRatio": 0.256831
+    }
+  },
+  {
+    "id": "D08",
+    "type": "bolt",
+    "x": 1172,
+    "y": 549,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.51478,
+      "centerOffsetRatio": 0.08775,
+      "shadowImbalance": 1.494681,
+      "blackRatio": 0.829764,
+      "blueRatio": 0.170236
+    }
+  },
+  {
+    "id": "D09",
+    "type": "bolt",
+    "x": 1288,
+    "y": 552,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.467373,
+      "centerOffsetRatio": 0.046941,
+      "shadowImbalance": 1.392857,
+      "blackRatio": 0.861702,
+      "blueRatio": 0.138298
+    }
+  },
+  {
+    "id": "D10",
+    "type": "bolt",
+    "x": 1405,
+    "y": 554,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.459565,
+      "centerOffsetRatio": 0.152252,
+      "shadowImbalance": 2.436364,
+      "blackRatio": 0.859189,
+      "blueRatio": 0.140811
+    }
+  },
+  {
+    "id": "D11",
+    "type": "bolt",
+    "x": 1514,
+    "y": 555,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.461238,
+      "centerOffsetRatio": 0.185193,
+      "shadowImbalance": 2.769231,
+      "blackRatio": 0.80355,
+      "blueRatio": 0.19645
+    }
+  },
+  {
+    "id": "E01",
+    "type": "bolt",
+    "x": 262,
+    "y": 621,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.466815,
+      "centerOffsetRatio": 0.184618,
+      "shadowImbalance": 2.632479,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "E02",
+    "type": "bolt",
+    "x": 399,
+    "y": 620,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.630229,
+      "centerOffsetRatio": 0.025364,
+      "shadowImbalance": 1.223529,
+      "blackRatio": 0.803478,
+      "blueRatio": 0.196522
+    }
+  },
+  {
+    "id": "E03",
+    "type": "bolt",
+    "x": 536,
+    "y": 626,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.412158,
+      "centerOffsetRatio": 0.096089,
+      "shadowImbalance": 1.590278,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "E04",
+    "type": "bolt",
+    "x": 672,
+    "y": 628,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.575014,
+      "centerOffsetRatio": 0.075855,
+      "shadowImbalance": 1.502463,
+      "blackRatio": 0.828681,
+      "blueRatio": 0.171319
+    }
+  },
+  {
+    "id": "E05",
+    "type": "bolt",
+    "x": 803,
+    "y": 633,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.572225,
+      "centerOffsetRatio": 0.036945,
+      "shadowImbalance": 1.139241,
+      "blackRatio": 0.814134,
+      "blueRatio": 0.185866
+    }
+  },
+  {
+    "id": "E06",
+    "type": "bolt",
+    "x": 934,
+    "y": 637,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.580591,
+      "centerOffsetRatio": 0.050322,
+      "shadowImbalance": 1.159836,
+      "blackRatio": 0.779565,
+      "blueRatio": 0.220435
+    }
+  },
+  {
+    "id": "E07",
+    "type": "bolt",
+    "x": 1062,
+    "y": 641,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.663692,
+      "centerOffsetRatio": 0.116237,
+      "shadowImbalance": 1.458498,
+      "blackRatio": 0.650702,
+      "blueRatio": 0.349298
+    }
+  },
+  {
+    "id": "E08",
+    "type": "bolt",
+    "x": 1187,
+    "y": 642,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.538204,
+      "centerOffsetRatio": 0.039725,
+      "shadowImbalance": 1.57,
+      "blackRatio": 0.911043,
+      "blueRatio": 0.088957
+    }
+  },
+  {
+    "id": "E09",
+    "type": "bolt",
+    "x": 1309,
+    "y": 644,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.546012,
+      "centerOffsetRatio": 0.06197,
+      "shadowImbalance": 1.54902,
+      "blackRatio": 0.910478,
+      "blueRatio": 0.089522
+    }
+  },
+  {
+    "id": "E10",
+    "type": "bolt",
+    "x": 1430,
+    "y": 645,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.530396,
+      "centerOffsetRatio": 0.120722,
+      "shadowImbalance": 2.167742,
+      "blackRatio": 0.877211,
+      "blueRatio": 0.122789
+    }
+  },
+  {
+    "id": "E11",
+    "type": "bolt",
+    "x": 1548,
+    "y": 652,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.511991,
+      "centerOffsetRatio": 0.053477,
+      "shadowImbalance": 1.458564,
+      "blackRatio": 0.879015,
+      "blueRatio": 0.120985
+    }
+  },
+  {
+    "id": "F01",
+    "type": "bolt",
+    "x": 236,
+    "y": 729,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.506414,
+      "centerOffsetRatio": 0.239666,
+      "shadowImbalance": 3.348214,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "F02",
+    "type": "bolt",
+    "x": 381,
+    "y": 729,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.530396,
+      "centerOffsetRatio": 0.108139,
+      "shadowImbalance": 2.012821,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "F03",
+    "type": "bolt",
+    "x": 525,
+    "y": 731,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.677635,
+      "centerOffsetRatio": 0.068525,
+      "shadowImbalance": 1.346008,
+      "blackRatio": 0.844786,
+      "blueRatio": 0.155214
+    }
+  },
+  {
+    "id": "F04",
+    "type": "bolt",
+    "x": 666,
+    "y": 731,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.489124,
+      "centerOffsetRatio": 0.133358,
+      "shadowImbalance": 2.158228,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "F05",
+    "type": "bolt",
+    "x": 807,
+    "y": 737,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.639152,
+      "centerOffsetRatio": 0.115804,
+      "shadowImbalance": 1.584906,
+      "blackRatio": 0.873288,
+      "blueRatio": 0.126712
+    }
+  },
+  {
+    "id": "F06",
+    "type": "bolt",
+    "x": 944,
+    "y": 743,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.438929,
+      "centerOffsetRatio": 0.112418,
+      "shadowImbalance": 2.353448,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "F07",
+    "type": "bolt",
+    "x": 1077,
+    "y": 744,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.63246,
+      "centerOffsetRatio": 0.042748,
+      "shadowImbalance": 1.19305,
+      "blackRatio": 0.830863,
+      "blueRatio": 0.169137
+    }
+  },
+  {
+    "id": "F08",
+    "type": "bolt",
+    "x": 1207,
+    "y": 749,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.431679,
+      "centerOffsetRatio": 0.180324,
+      "shadowImbalance": 3.37037,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "F09",
+    "type": "bolt",
+    "x": 1338,
+    "y": 746,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.631344,
+      "centerOffsetRatio": 0.058966,
+      "shadowImbalance": 1.265823,
+      "blackRatio": 0.869527,
+      "blueRatio": 0.130473
+    }
+  },
+  {
+    "id": "F10",
+    "type": "bolt",
+    "x": 1461,
+    "y": 751,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.599554,
+      "centerOffsetRatio": 0.085823,
+      "shadowImbalance": 1.488152,
+      "blackRatio": 0.880074,
+      "blueRatio": 0.119926
+    }
+  },
+  {
+    "id": "F11",
+    "type": "bolt",
+    "x": 1583,
+    "y": 752,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.586726,
+      "centerOffsetRatio": 0.077365,
+      "shadowImbalance": 1.383495,
+      "blackRatio": 0.807297,
+      "blueRatio": 0.192703
+    }
+  },
+  {
+    "id": "G01",
+    "type": "bolt",
+    "x": 207,
+    "y": 845,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.537089,
+      "centerOffsetRatio": 0.144848,
+      "shadowImbalance": 1.960227,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "G02",
+    "type": "bolt",
+    "x": 359,
+    "y": 851,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.563859,
+      "centerOffsetRatio": 0.221266,
+      "shadowImbalance": 2.712329,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "G03",
+    "type": "bolt",
+    "x": 511,
+    "y": 847,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.762409,
+      "centerOffsetRatio": 0.081097,
+      "shadowImbalance": 1.381119,
+      "blackRatio": 0.805575,
+      "blueRatio": 0.194425
+    }
+  },
+  {
+    "id": "G04",
+    "type": "bolt",
+    "x": 661,
+    "y": 852,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.754044,
+      "centerOffsetRatio": 0.067848,
+      "shadowImbalance": 1.211921,
+      "blackRatio": 0.819912,
+      "blueRatio": 0.180088
+    }
+  },
+  {
+    "id": "G05",
+    "type": "bolt",
+    "x": 806,
+    "y": 855,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.508087,
+      "centerOffsetRatio": 0.160326,
+      "shadowImbalance": 2.261538,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "G06",
+    "type": "bolt",
+    "x": 950,
+    "y": 855,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.732292,
+      "centerOffsetRatio": 0.020593,
+      "shadowImbalance": 1.210884,
+      "blackRatio": 0.797307,
+      "blueRatio": 0.202693
+    }
+  },
+  {
+    "id": "G07",
+    "type": "bolt",
+    "x": 1091,
+    "y": 857,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.692136,
+      "centerOffsetRatio": 0.015183,
+      "shadowImbalance": 1.234483,
+      "blackRatio": 0.795056,
+      "blueRatio": 0.204944
+    }
+  },
+  {
+    "id": "G08",
+    "type": "bolt",
+    "x": 1228,
+    "y": 856,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.669827,
+      "centerOffsetRatio": 0.06775,
+      "shadowImbalance": 1.555556,
+      "blackRatio": 0.814332,
+      "blueRatio": 0.185668
+    }
+  },
+  {
+    "id": "G09",
+    "type": "bolt",
+    "x": 1365,
+    "y": 857,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.495817,
+      "centerOffsetRatio": 0.097354,
+      "shadowImbalance": 2.085366,
+      "blackRatio": 1.0,
+      "blueRatio": 0.0
+    }
+  },
+  {
+    "id": "G10",
+    "type": "bolt",
+    "x": 1492,
+    "y": 858,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.630786,
+      "centerOffsetRatio": 0.092177,
+      "shadowImbalance": 1.662222,
+      "blackRatio": 0.832309,
+      "blueRatio": 0.167691
+    }
+  },
+  {
+    "id": "G11",
+    "type": "bolt",
+    "x": 1623,
+    "y": 859,
+    "r": 24,
+    "expectedColor": "auto",
+    "baseline": {
+      "presenceRatio": 0.63469,
+      "centerOffsetRatio": 0.043402,
+      "shadowImbalance": 1.4,
+      "blackRatio": 0.8,
+      "blueRatio": 0.2
+    }
+  }
+]

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>螺栓贴合 ROI 检测 — Python 版</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <h1>螺栓贴合 ROI 检测 <span style="font-weight:400;color:var(--muted);font-size:16px;">— Python 后端</span></h1>
+          <p>固定坐标白名单检测，通过 Python PIL 进行像素级分析。</p>
+        </div>
+        <div class="actions">
+          <input id="imageInput" type="file" accept="image/*" hidden />
+          <button id="loadImageBtn" type="button">导入图片</button>
+          <button id="useSampleBtn" type="button">使用示例</button>
+          <button id="runBtn" type="button">重新检测</button>
+          <button id="exportLayoutBtn" type="button">保存点位</button>
+          <button id="exportResultBtn" type="button">导出结果</button>
+          <button id="resetLayoutBtn" type="button">恢复默认布局</button>
+        </div>
+      </header>
+
+      <section class="workspace">
+        <div class="viewer-panel">
+          <div class="viewer-toolbar">
+            <label class="toggle">
+              <input id="editMode" type="checkbox" />
+              <span>编辑点位</span>
+            </label>
+            <label>
+              X 偏移
+              <input id="offsetX" type="number" value="0" step="1" />
+            </label>
+            <label>
+              Y 偏移
+              <input id="offsetY" type="number" value="0" step="1" />
+            </label>
+            <label>
+              ROI 半径
+              <input id="radiusInput" type="number" value="28" step="1" min="8" />
+            </label>
+          </div>
+          <div class="canvas-wrap">
+            <canvas id="imageCanvas"></canvas>
+          </div>
+        </div>
+
+        <aside class="side-panel">
+          <section class="panel-section">
+            <h2>当前点位</h2>
+            <div id="selectedFields" class="field-grid">
+              <label>
+                编号
+                <input id="pointId" type="text" />
+              </label>
+              <label>
+                类型
+                <select id="pointType">
+                  <option value="bolt">检测螺栓</option>
+                  <option value="ignore">忽略</option>
+                </select>
+              </label>
+              <label>
+                X
+                <input id="pointX" type="number" step="1" />
+              </label>
+              <label>
+                Y
+                <input id="pointY" type="number" step="1" />
+              </label>
+              <label>
+                半径
+                <input id="pointR" type="number" step="1" min="8" />
+              </label>
+              <label>
+                颜色
+                <select id="expectedColor">
+                  <option value="auto">自动</option>
+                  <option value="black">黑色螺栓</option>
+                  <option value="blue">蓝色螺栓</option>
+                </select>
+              </label>
+            </div>
+            <div class="row-actions">
+              <button id="applyPointBtn" type="button">应用修改</button>
+              <button id="addPointBtn" type="button">新增点位</button>
+              <button id="deletePointBtn" type="button">删除点位</button>
+            </div>
+          </section>
+
+          <section class="panel-section">
+            <h2>检测阈值</h2>
+            <div class="field-grid">
+              <label>
+                最小占比
+                <input id="minPresence" type="number" value="0.15" step="0.01" min="0" max="1" />
+              </label>
+              <label>
+                最大占比
+                <input id="maxPresence" type="number" value="0.95" step="0.01" min="0" max="1" />
+              </label>
+              <label>
+                最大偏心
+                <input id="maxOffsetRatio" type="number" value="0.45" step="0.01" min="0" max="1" />
+              </label>
+              <label>
+                阴影差
+                <input id="maxShadowImbalance" type="number" value="20.0" step="0.1" min="1" />
+              </label>
+            </div>
+          </section>
+
+          <section class="panel-section summary">
+            <h2>汇总</h2>
+            <div class="summary-grid">
+              <span>OK</span><strong id="okCount">0</strong>
+              <span>复核</span><strong id="reviewCount">0</strong>
+              <span>缺失</span><strong id="missingCount">0</strong>
+              <span>NG</span><strong id="ngCount">0</strong>
+              <span>忽略</span><strong id="ignoreCount">0</strong>
+            </div>
+          </section>
+        </aside>
+      </section>
+
+      <section class="results">
+        <div class="table-head">
+          <h2>检测明细</h2>
+          <span id="imageInfo"></span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>点位</th>
+                <th>类型</th>
+                <th>结果</th>
+                <th>物体占比</th>
+                <th>偏心</th>
+                <th>阴影差</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody id="resultBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <div id="loadingOverlay" class="loading-overlay" style="display:none;">
+      <div class="spinner"></div>
+      <span>正在检测中...</span>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

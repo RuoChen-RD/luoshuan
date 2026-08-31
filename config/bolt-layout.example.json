@@ -1,0 +1,18 @@
+[
+  {
+    "id": "A01",
+    "x": 348,
+    "y": 273,
+    "r": 28,
+    "type": "bolt",
+    "expectedColor": "blackHead"
+  },
+  {
+    "id": "A10",
+    "x": 1329,
+    "y": 323,
+    "r": 28,
+    "type": "bolt",
+    "expectedColor": "blackHead"
+  }
+]

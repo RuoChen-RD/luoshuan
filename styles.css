@@ -44,6 +44,23 @@ button:hover {
   color: var(--accent);
 }
 
+.tool-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  border: 1px solid #b9c6c0;
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--ink);
+  padding: 0 12px;
+  text-decoration: none;
+}
+
+.tool-link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .app-shell {
   min-height: 100vh;
   padding: 18px;
@@ -103,6 +120,18 @@ button:hover {
 .status-line.error {
   color: var(--ng);
   border-color: rgba(199, 53, 47, 0.35);
+}
+
+.lamp-ok {
+  color: var(--ok);
+}
+
+.lamp-warn {
+  color: var(--review);
+}
+
+.lamp-ng {
+  color: var(--ng);
 }
 
 .workspace {
@@ -201,6 +230,24 @@ button:hover {
   width: 100%;
 }
 
+.wide-field {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.wide-field select {
+  width: 100%;
+  height: 34px;
+  border: 1px solid #bfcbc5;
+  border-radius: 6px;
+  padding: 0 8px;
+  background: #fff;
+  color: var(--ink);
+}
+
 .row-actions {
   margin-top: 12px;
 }
@@ -217,6 +264,13 @@ button:hover {
   display: flex;
   align-items: center;
   border-bottom: 1px solid var(--line);
+}
+
+.hint-text {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .summary-grid strong {

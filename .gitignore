@@ -1,0 +1,13 @@
+.DS_Store
+*.cache
+*.pt
+.venv/
+runs/
+training/runs/
+training/predictions/
+training/dataset/images/unlabeled/*.jpg
+training/dataset/images/unlabeled/*-manifest.csv
+training/dataset/images/train/*.jpg
+training/dataset/images/val/*.jpg
+training/dataset/labels/train/*.txt
+training/dataset/labels/val/*.txt

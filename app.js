@@ -104,15 +104,31 @@ const REFERENCE_ANCHORS = [
 ];
 
 const REFERENCE_IMAGE_SIZE = { width: 1920, height: 1080 };
+const POSE_MODEL_URL = "./training/models/screwdriver-tip.onnx";
+const POSE_INPUT_SIZE = 960;
+const POSE_CONFIDENCE = 0.45;
 
 const state = {
   image: null,
   imageName: "assets/sample-board.png",
+  videoStream: null,
+  videoUrl: "",
+  sourceMode: "image",
   layout: loadSavedLayout(),
   calibration: cloneAnchors(REFERENCE_ANCHORS),
   layoutFileHandle: null,
   layoutFileName: "",
   results: [],
+  visualResults: [],
+  tighteningByPoint: {},
+  initialStatusByPoint: null,
+  toolTracking: createEmptyToolTracking(),
+  monitoring: false,
+  previewFrameId: 0,
+  monitorFrameId: 0,
+  lastMonitorAt: 0,
+  liveSignal: null,
+  poseModel: { session: null, loading: false, error: "" },
   selectedId: "A01",
   selectedAnchorId: "",
   dragging: false,
@@ -124,8 +140,13 @@ const state = {
 const els = {
   canvas: document.getElementById("imageCanvas"),
   imageInput: document.getElementById("imageInput"),
+  videoInput: document.getElementById("videoInput"),
   layoutInput: document.getElementById("layoutInput"),
   loadImageBtn: document.getElementById("loadImageBtn"),
+  loadVideoBtn: document.getElementById("loadVideoBtn"),
+  cameraBtn: document.getElementById("cameraBtn"),
+  monitorBtn: document.getElementById("monitorBtn"),
+  stopVideoBtn: document.getElementById("stopVideoBtn"),
   runBtn: document.getElementById("runBtn"),
   resetLayoutBtn: document.getElementById("resetLayoutBtn"),
   snapLayoutBtn: document.getElementById("snapLayoutBtn"),
@@ -160,6 +181,12 @@ const els = {
   ngCount: document.getElementById("ngCount"),
   ignoreCount: document.getElementById("ignoreCount"),
   imageInfo: document.getElementById("imageInfo"),
+  videoSource: document.getElementById("videoSource"),
+  lampState: document.getElementById("lampState"),
+  activePoint: document.getElementById("activePoint"),
+  tightenedCount: document.getElementById("tightenedCount"),
+  operationMode: document.getElementById("operationMode"),
+  monitorHint: document.getElementById("monitorHint"),
   statusText: document.getElementById("statusText"),
 };
 
@@ -171,6 +198,132 @@ function cloneLayout(layout) {
 
 function cloneAnchors(anchors) {
   return anchors.map((anchor) => ({ ...anchor }));
+}
+
+function createEmptyToolTracking() {
+  return {
+    candidateId: "",
+    candidatePoint: null,
+    candidateFrames: 0,
+    lostFrames: 0,
+    greenFrames: 0,
+    greenLatched: false,
+  };
+}
+
+function resetTighteningSession() {
+  state.tighteningByPoint = {};
+  state.initialStatusByPoint = null;
+  state.toolTracking = createEmptyToolTracking();
+}
+
+async function loadPoseModel() {
+  if (state.poseModel.session || state.poseModel.loading || !globalThis.ort) return;
+  state.poseModel.loading = true;
+  try {
+    ort.env.wasm.wasmPaths = "./vendor/onnxruntime-web/";
+    state.poseModel.session = await ort.InferenceSession.create(POSE_MODEL_URL, {
+      executionProviders: ["wasm"],
+      graphOptimizationLevel: "all",
+    });
+    state.poseModel.error = "";
+    updateMonitorPanel();
+  } catch (error) {
+    state.poseModel.error = error.message || String(error);
+    updateMonitorPanel();
+    console.warn("YOLO pose model unavailable; using the image-rule fallback.", error);
+  } finally {
+    state.poseModel.loading = false;
+  }
+}
+
+function poseInputFromImageData(imageData) {
+  const sourceCanvas = document.createElement("canvas");
+  sourceCanvas.width = imageData.width;
+  sourceCanvas.height = imageData.height;
+  sourceCanvas.getContext("2d").putImageData(imageData, 0, 0);
+  const letterbox = document.createElement("canvas");
+  letterbox.width = POSE_INPUT_SIZE;
+  letterbox.height = POSE_INPUT_SIZE;
+  const letterboxCtx = letterbox.getContext("2d", { willReadFrequently: true });
+  letterboxCtx.fillStyle = "rgb(114,114,114)";
+  letterboxCtx.fillRect(0, 0, POSE_INPUT_SIZE, POSE_INPUT_SIZE);
+  const scale = Math.min(POSE_INPUT_SIZE / imageData.width, POSE_INPUT_SIZE / imageData.height);
+  const width = Math.round(imageData.width * scale);
+  const height = Math.round(imageData.height * scale);
+  const padX = Math.round((POSE_INPUT_SIZE - width) / 2);
+  const padY = Math.round((POSE_INPUT_SIZE - height) / 2);
+  letterboxCtx.drawImage(sourceCanvas, 0, 0, imageData.width, imageData.height, padX, padY, width, height);
+  const pixels = letterboxCtx.getImageData(0, 0, POSE_INPUT_SIZE, POSE_INPUT_SIZE).data;
+  const input = new Float32Array(3 * POSE_INPUT_SIZE * POSE_INPUT_SIZE);
+  const plane = POSE_INPUT_SIZE * POSE_INPUT_SIZE;
+  for (let i = 0; i < plane; i += 1) {
+    input[i] = pixels[i * 4] / 255;
+    input[plane + i] = pixels[i * 4 + 1] / 255;
+    input[plane * 2 + i] = pixels[i * 4 + 2] / 255;
+  }
+  return { input, scale, padX, padY };
+}
+
+function boxIoU(a, b) {
+  const left = Math.max(a.x1, b.x1);
+  const top = Math.max(a.y1, b.y1);
+  const right = Math.min(a.x2, b.x2);
+  const bottom = Math.min(a.y2, b.y2);
+  const intersection = Math.max(0, right - left) * Math.max(0, bottom - top);
+  const areaA = Math.max(0, a.x2 - a.x1) * Math.max(0, a.y2 - a.y1);
+  const areaB = Math.max(0, b.x2 - b.x1) * Math.max(0, b.y2 - b.y1);
+  return intersection / Math.max(1e-6, areaA + areaB - intersection);
+}
+
+function decodePoseOutput(output, imageData, transform) {
+  const data = output.data;
+  const count = output.dims[output.dims.length - 1];
+  const candidates = [];
+  for (let index = 0; index < count; index += 1) {
+    const confidence = data[4 * count + index];
+    if (confidence < POSE_CONFIDENCE) continue;
+    const centerX = data[index];
+    const centerY = data[count + index];
+    const width = data[2 * count + index];
+    const height = data[3 * count + index];
+    const tipX = data[5 * count + index];
+    const tipY = data[6 * count + index];
+    const keypointConfidence = data[7 * count + index];
+    const unletter = (x, y) => ({
+      x: Math.max(0, Math.min(imageData.width - 1, (x - transform.padX) / transform.scale)),
+      y: Math.max(0, Math.min(imageData.height - 1, (y - transform.padY) / transform.scale)),
+    });
+    const boxCenter = unletter(centerX, centerY);
+    const boxWidth = width / transform.scale;
+    const boxHeight = height / transform.scale;
+    candidates.push({
+      confidence,
+      keypointConfidence,
+      tip: unletter(tipX, tipY),
+      x1: boxCenter.x - boxWidth / 2,
+      y1: boxCenter.y - boxHeight / 2,
+      x2: boxCenter.x + boxWidth / 2,
+      y2: boxCenter.y + boxHeight / 2,
+    });
+  }
+  candidates.sort((a, b) => b.confidence - a.confidence);
+  const kept = [];
+  for (const candidate of candidates) {
+    if (kept.every((other) => boxIoU(candidate, other) < 0.45)) kept.push(candidate);
+    if (kept.length >= 3) break;
+  }
+  return kept;
+}
+
+async function predictPose(imageData) {
+  if (!state.poseModel.session || !globalThis.ort) return [];
+  const transform = poseInputFromImageData(imageData);
+  const inputName = state.poseModel.session.inputNames[0];
+  const outputName = state.poseModel.session.outputNames[0];
+  const tensor = new ort.Tensor("float32", transform.input, [1, 3, POSE_INPUT_SIZE, POSE_INPUT_SIZE]);
+  const outputs = await state.poseModel.session.run({ [inputName]: tensor });
+  return decodePoseOutput(outputs[outputName], imageData, transform);
 }
 
 function loadSavedCalibration() {
@@ -261,7 +414,9 @@ function layoutPayload() {
 function resultPayload() {
   return {
     imageName: state.imageName,
+    sourceMode: state.sourceMode,
     thresholds: getThresholds(),
+    tighteningByPoint: state.tighteningByPoint,
     results: state.results,
   };
 }
@@ -390,6 +545,9 @@ function applySavedSettings() {
   if (saved.autoLocateOnLoad !== undefined) {
     els.autoLocateOnLoad.checked = Boolean(saved.autoLocateOnLoad);
   }
+  if (saved.operationMode && els.operationMode) {
+    els.operationMode.value = saved.operationMode;
+  }
 }
 
 function saveSettings(reason = "参数已保存") {
@@ -412,6 +570,7 @@ function getSettingsPayload() {
     minSolidHead: els.minSolidHead.value,
     maxOffsetRatio: els.maxOffsetRatio.value,
     maxShadowImbalance: els.maxShadowImbalance.value,
+    operationMode: els.operationMode.value,
     autoLocateOnLoad: els.autoLocateOnLoad.checked,
   };
 }
@@ -426,13 +585,19 @@ function formatTime(date) {
 }
 
 function loadImage(src, name) {
+  stopMonitoring();
+  stopVideoSource();
+  resetTighteningSession();
   const img = new Image();
   img.onload = () => {
     state.image = img;
     state.imageName = name;
+    state.sourceMode = "image";
+    state.liveSignal = null;
     els.canvas.width = img.naturalWidth;
     els.canvas.height = img.naturalHeight;
     els.imageInfo.textContent = `${name} · ${img.naturalWidth} x ${img.naturalHeight}`;
+    updateMonitorPanel();
     runInspection("图片加载完成，已按固定坐标检测");
     warnIfImageSizeChanged(img);
   };
@@ -440,6 +605,177 @@ function loadImage(src, name) {
     setStatus(`图片加载失败：${name}`, "error");
   };
   img.src = src;
+}
+
+function loadVideoFile(file) {
+  stopMonitoring();
+  stopVideoSource();
+  const url = URL.createObjectURL(file);
+  state.videoUrl = url;
+  state.sourceMode = "video";
+  state.image = null;
+  state.imageName = file.name;
+  resetTighteningSession();
+  state.liveSignal = null;
+  els.videoSource.src = url;
+  els.videoSource.loop = true;
+  els.videoSource.muted = true;
+  els.videoSource.playsInline = true;
+  els.videoSource.onloadedmetadata = () => {
+    syncCanvasToVideoSize();
+    warnIfVideoSizeChanged();
+    setStatus(`录像元数据已加载：${file.name}，正在等待首帧...`, "warn");
+    updateMonitorPanel();
+  };
+  els.videoSource.onloadeddata = () => {
+    drawVideoPreviewFrame();
+    runInspection(`录像首帧已加载：${file.name}`);
+    startVideoPreview();
+    els.videoSource.play().catch(() => {
+      setStatus("录像已加载。浏览器未允许自动播放，请点击“开始监控”或视频区域后再试。", "warn");
+    });
+  };
+  els.videoSource.oncanplay = () => {
+    drawVideoPreviewFrame();
+    startVideoPreview();
+  };
+  els.videoSource.onerror = () => {
+    const error = els.videoSource.error;
+    setStatus(`录像解码失败：${error?.message || "浏览器不支持该视频编码，请换 MP4/H.264 格式"}`, "error");
+  };
+  els.videoSource.load();
+}
+
+async function startCamera() {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    setStatus("当前浏览器不支持摄像头访问，请改用导入录像。", "error");
+    return;
+  }
+
+  try {
+    stopMonitoring();
+    stopVideoSource();
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: {
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+        facingMode: "environment",
+      },
+    });
+    state.videoStream = stream;
+    state.sourceMode = "video";
+    state.image = null;
+    state.imageName = "摄像头实时画面";
+    resetTighteningSession();
+    state.liveSignal = null;
+    els.videoSource.srcObject = stream;
+    els.videoSource.loop = false;
+    await els.videoSource.play();
+    syncCanvasToVideoSize();
+    warnIfVideoSizeChanged();
+    runInspection("摄像头已打开");
+    startVideoPreview();
+    updateMonitorPanel();
+  } catch (error) {
+    setStatus(`打开摄像头失败：${error.message}`, "error");
+  }
+}
+
+function stopVideoSource() {
+  stopVideoPreview();
+  if (state.videoStream) {
+    state.videoStream.getTracks().forEach((track) => track.stop());
+    state.videoStream = null;
+  }
+  if (state.videoUrl) {
+    URL.revokeObjectURL(state.videoUrl);
+    state.videoUrl = "";
+  }
+  els.videoSource.pause();
+  els.videoSource.onloadedmetadata = null;
+  els.videoSource.onloadeddata = null;
+  els.videoSource.oncanplay = null;
+  els.videoSource.onerror = null;
+  els.videoSource.removeAttribute("src");
+  els.videoSource.srcObject = null;
+  els.videoSource.load();
+}
+
+function startVideoPreview() {
+  if (state.previewFrameId || state.sourceMode !== "video") return;
+  state.previewFrameId = requestAnimationFrame(videoPreviewLoop);
+}
+
+function stopVideoPreview() {
+  if (!state.previewFrameId) return;
+  cancelAnimationFrame(state.previewFrameId);
+  state.previewFrameId = 0;
+}
+
+function videoPreviewLoop(timestamp) {
+  state.previewFrameId = 0;
+  if (state.sourceMode !== "video" || !hasDrawableSource()) return;
+
+  if (timestamp - state.lastMonitorAt >= 220) {
+    state.lastMonitorAt = timestamp;
+    runInspection(state.monitoring ? "视频监控中" : "视频实时检测中", {
+      recordTightening: state.monitoring,
+    });
+  } else {
+    drawVideoPreviewFrame();
+  }
+  state.previewFrameId = requestAnimationFrame(videoPreviewLoop);
+}
+
+function drawVideoPreviewFrame() {
+  if (state.sourceMode !== "video" || !hasDrawableSource()) return false;
+  ctx.clearRect(0, 0, els.canvas.width, els.canvas.height);
+  if (!drawSourceToCanvas()) return false;
+  drawOverlay();
+  return true;
+}
+
+function warnIfVideoSizeChanged() {
+  const width = els.videoSource.videoWidth;
+  const height = els.videoSource.videoHeight;
+  if (!width || !height) return;
+  if (width !== REFERENCE_IMAGE_SIZE.width || height !== REFERENCE_IMAGE_SIZE.height) {
+    setStatus(
+      `当前视频 ${width}x${height} 与标准图 ${REFERENCE_IMAGE_SIZE.width}x${REFERENCE_IMAGE_SIZE.height} 不一致，固定坐标可能需要重新校准。`,
+      "warn",
+    );
+  }
+}
+
+function syncCanvasToVideoSize() {
+  const width = els.videoSource.videoWidth || REFERENCE_IMAGE_SIZE.width;
+  const height = els.videoSource.videoHeight || REFERENCE_IMAGE_SIZE.height;
+  if (els.canvas.width !== width || els.canvas.height !== height) {
+    els.canvas.width = width;
+    els.canvas.height = height;
+  }
+  els.imageInfo.textContent = `${state.imageName} · ${width} x ${height}`;
+}
+
+function hasDrawableSource() {
+  if (state.sourceMode === "video") {
+    return els.videoSource.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
+  }
+  return Boolean(state.image);
+}
+
+function drawSourceToCanvas() {
+  if (state.sourceMode === "video") {
+    if (!hasDrawableSource()) return false;
+    syncCanvasToVideoSize();
+    ctx.drawImage(els.videoSource, 0, 0, els.canvas.width, els.canvas.height);
+    return true;
+  }
+
+  if (!state.image) return false;
+  ctx.drawImage(state.image, 0, 0);
+  return true;
 }
 
 function warnIfImageSizeChanged(img) {
@@ -462,12 +798,23 @@ function getThresholds() {
   };
 }
 
+function sourceScale() {
+  const width = els.canvas.width || REFERENCE_IMAGE_SIZE.width;
+  const height = els.canvas.height || REFERENCE_IMAGE_SIZE.height;
+  return {
+    x: width / REFERENCE_IMAGE_SIZE.width,
+    y: height / REFERENCE_IMAGE_SIZE.height,
+    r: ((width / REFERENCE_IMAGE_SIZE.width) + (height / REFERENCE_IMAGE_SIZE.height)) / 2,
+  };
+}
+
 function pointWithOffset(point) {
+  const scale = sourceScale();
   return {
     ...point,
-    x: point.x + Number(els.offsetX.value || 0),
-    y: point.y + Number(els.offsetY.value || 0),
-    r: point.r || Number(els.radiusInput.value || 28),
+    x: point.x * scale.x + Number(els.offsetX.value || 0),
+    y: point.y * scale.y + Number(els.offsetY.value || 0),
+    r: (point.r || Number(els.radiusInput.value || 28)) * scale.r,
   };
 }
 
@@ -830,14 +1177,17 @@ function median(values) {
   return sorted[Math.floor(sorted.length / 2)];
 }
 
-function runInspection(reason = "重新检测完成") {
-  if (!state.image) {
-    setStatus("图片还没加载完成，稍后再点重新检测。", "warn");
+async function runInspection(reason = "重新检测完成", options = {}) {
+  if (!hasDrawableSource()) {
+    setStatus("图片或视频还没加载完成，稍后再点重新检测。", "warn");
     return;
   }
 
   ctx.clearRect(0, 0, els.canvas.width, els.canvas.height);
-  ctx.drawImage(state.image, 0, 0);
+  if (!drawSourceToCanvas()) {
+    setStatus("当前画面还没准备好，稍后再试。", "warn");
+    return;
+  }
   let imageData;
   try {
     imageData = ctx.getImageData(0, 0, els.canvas.width, els.canvas.height);
@@ -847,14 +1197,54 @@ function runInspection(reason = "重新检测完成") {
   }
   const thresholds = getThresholds();
 
-  state.results = state.layout.map((point) => inspectPoint(point, imageData, thresholds));
+  state.visualResults = state.layout.map((point) => inspectPoint(point, imageData, thresholds));
+  state.results = state.visualResults;
+  let poseDetections = [];
+  try {
+    poseDetections = await predictPose(imageData);
+  } catch (error) {
+    console.warn("YOLO pose inference failed; using the image-rule fallback.", error);
+  }
+  if (state.sourceMode === "video") {
+    updateLiveTighteningSignal(imageData, options.recordTightening ?? state.monitoring, poseDetections);
+  }
+  state.results = applyTighteningProgress(state.visualResults);
   drawOverlay();
   renderResults();
   syncSelectedFields();
   const ok = state.results.filter((item) => item.status === "OK").length;
   const review = state.results.filter((item) => item.status === "REVIEW").length;
   const ng = state.results.filter((item) => item.status === "NG").length;
-  setStatus(`${reason} · 已拧 ${ok} / 复核 ${review} / 未拧 ${ng} · ${formatTime(new Date())}`, "ok");
+  const liveText = state.sourceMode === "video" ? ` · 灯号 ${state.liveSignal?.lamp.label || "未检测"} · 枪头 ${state.liveSignal?.activePoint?.id || "-"}` : "";
+  setStatus(`${reason} · 已拧 ${ok} / 复核 ${review} / 未拧 ${ng}${liveText} · ${formatTime(new Date())}`, "ok");
+}
+
+function captureInitialTighteningStatus() {
+  const source = state.visualResults.length ? state.visualResults : state.results;
+  state.initialStatusByPoint = Object.fromEntries(source.map((result) => [result.id, result.status]));
+  state.toolTracking = createEmptyToolTracking();
+  return source.filter((result) => result.status === "NG").length;
+}
+
+function applyTighteningProgress(results) {
+  if (!state.initialStatusByPoint) return results;
+
+  return results.map((result) => {
+    const initialStatus = state.initialStatusByPoint[result.id] || result.status;
+    const confirmation = state.tighteningByPoint[result.id];
+    if (confirmation && initialStatus === "NG") {
+      return {
+        ...result,
+        status: "OK",
+        note: "初始未拧，已由枪头点位和连续绿灯共同确认",
+      };
+    }
+    return {
+      ...result,
+      status: initialStatus,
+      note: initialStatus === "NG" ? "初始识别为未拧，等待对应枪头绿灯确认" : result.note,
+    };
+  });
 }
 
 function inspectPoint(originalPoint, imageData, thresholds) {
@@ -1081,9 +1471,438 @@ function isWasherPixel(red, green, blue) {
   return isBlueWasherPixel(red, green, blue) || isWhiteWasherPixel(red, green, blue);
 }
 
+function updateLiveTighteningSignal(imageData, shouldRecord, poseDetections = []) {
+  const lamp = detectDriverLamp(imageData);
+  const rawPoint = findActiveToolPoint(imageData, lamp, poseDetections);
+  const tracking = state.toolTracking;
+
+  if (rawPoint?.id && rawPoint.id === tracking.candidateId) {
+    tracking.candidateFrames += 1;
+    tracking.lostFrames = 0;
+    tracking.candidatePoint = rawPoint;
+  } else if (!rawPoint && tracking.candidatePoint && tracking.candidateFrames >= 2) {
+    tracking.lostFrames += 1;
+  } else {
+    tracking.candidateId = rawPoint?.id || "";
+    tracking.candidateFrames = rawPoint ? 1 : 0;
+    if (rawPoint) {
+      tracking.candidatePoint = rawPoint;
+      tracking.lostFrames = 0;
+      tracking.greenFrames = 0;
+      tracking.greenLatched = false;
+    } else {
+      tracking.candidatePoint = null;
+      tracking.lostFrames = 0;
+      tracking.greenFrames = 0;
+      tracking.greenLatched = false;
+    }
+  }
+
+  const activePoint = tracking.candidatePoint && tracking.candidateFrames >= 2 && tracking.lostFrames <= 5
+    ? tracking.candidatePoint
+    : null;
+  if (activePoint && lamp.status === "GREEN_OK") {
+    tracking.greenFrames += 1;
+  } else {
+    tracking.greenFrames = 0;
+    tracking.greenLatched = false;
+  }
+
+  state.liveSignal = { lamp, activePoint, rawPoint, stableFrames: tracking.candidateFrames };
+
+  const initialStatus = activePoint && state.initialStatusByPoint?.[activePoint.id];
+  const canConfirm =
+    shouldRecord &&
+    els.operationMode.value === "tighten" &&
+    activePoint &&
+    canPointBeTightened(activePoint.id) &&
+    initialStatus === "NG" &&
+    !state.tighteningByPoint[activePoint.id] &&
+    tracking.greenFrames >= 2 &&
+    !tracking.greenLatched;
+
+  if (canConfirm) {
+    state.tighteningByPoint[activePoint.id] = {
+      pointId: activePoint.id,
+      confirmedAt: new Date().toISOString(),
+      lamp: lamp.label,
+      lampPixels: lamp.pixelCount,
+      toolScore: Number(activePoint.score.toFixed(4)),
+      stableToolFrames: tracking.candidateFrames,
+      stableGreenFrames: tracking.greenFrames,
+    };
+    tracking.greenLatched = true;
+    state.selectedId = activePoint.id;
+  }
+
+  updateMonitorPanel();
+}
+
+function detectDriverLamp(imageData) {
+  const data = imageData.data;
+  const step = 3;
+  let green = 0;
+  let red = 0;
+  let yellow = 0;
+  const limitY = Math.floor(imageData.height * 0.68);
+  const boundsByColor = {
+    green: emptyBounds(imageData),
+    red: emptyBounds(imageData),
+    yellow: emptyBounds(imageData),
+  };
+
+  for (let y = 0; y < limitY; y += step) {
+    for (let x = 0; x < imageData.width; x += step) {
+      const idx = (y * imageData.width + x) * 4;
+      const redValue = data[idx];
+      const greenValue = data[idx + 1];
+      const blueValue = data[idx + 2];
+      // Board washers can also be colored, so require the indicator light to
+      // be both bright and strongly saturated before using it as geometry.
+      const isGreen = greenValue > 185 && greenValue > redValue * 1.22 && greenValue > blueValue * 1.3 && greenValue - redValue > 28;
+      const isRed = redValue > 185 && redValue > greenValue * 1.38 && redValue > blueValue * 1.35 && redValue - greenValue > 35;
+      const isYellow = redValue > 185 && greenValue > 150 && blueValue < 105 && redValue > blueValue * 1.8;
+
+      if (!isGreen && !isRed && !isYellow) continue;
+      if (isGreen) {
+        green += 1;
+        extendBounds(boundsByColor.green, x, y);
+      } else if (isRed) {
+        red += 1;
+        extendBounds(boundsByColor.red, x, y);
+      } else {
+        yellow += 1;
+        extendBounds(boundsByColor.yellow, x, y);
+      }
+    }
+  }
+
+  const pixelCount = Math.max(green, red, yellow);
+  if (green >= 18 && green > yellow * 0.45 && green > red * 0.18) {
+    return { status: "GREEN_OK", label: "绿灯OK", className: "lamp-ok", pixelCount, bounds: boundsByColor.green };
+  }
+  if (red >= 18 && red >= green) {
+    return { status: "RED", label: "红灯/非OK", className: "lamp-ng", pixelCount, bounds: boundsByColor.red };
+  }
+  if (yellow >= 18) {
+    return { status: "YELLOW", label: "黄灯/过程", className: "lamp-warn", pixelCount, bounds: boundsByColor.yellow };
+  }
+  return { status: "NONE", label: "未检测", className: "", pixelCount: 0, bounds: null };
+}
+
+function emptyBounds(imageData) {
+  return { minX: imageData.width, minY: imageData.height, maxX: 0, maxY: 0 };
+}
+
+function extendBounds(bounds, x, y) {
+  bounds.minX = Math.min(bounds.minX, x);
+  bounds.minY = Math.min(bounds.minY, y);
+  bounds.maxX = Math.max(bounds.maxX, x);
+  bounds.maxY = Math.max(bounds.maxY, y);
+}
+
+function findActiveToolPoint(imageData, lamp, poseDetections = []) {
+  const eligibleIds = getToolCandidateIds();
+  if (poseDetections.length) {
+    let best = null;
+    let second = null;
+    for (const detection of poseDetections) {
+      if (detection.keypointConfidence < 0.35) continue;
+      for (const originalPoint of state.layout) {
+        if (originalPoint.type === "ignore") continue;
+        if (eligibleIds && !eligibleIds.has(originalPoint.id)) continue;
+        const point = pointWithOffset(originalPoint);
+        const distance = Math.hypot(point.x - detection.tip.x, point.y - detection.tip.y);
+        const maxDistance = Math.max(42, point.r * 1.75);
+        if (distance > maxDistance) continue;
+        const score = detection.confidence * 0.7 + detection.keypointConfidence * 0.2 + (1 - distance / maxDistance) * 0.1;
+        const candidate = { id: originalPoint.id, x: point.x, y: point.y, tipX: detection.tip.x, tipY: detection.tip.y, score, distance, source: "yolo" };
+        if (!best || candidate.score > best.score) {
+          second = best;
+          best = candidate;
+        } else if (!second || candidate.score > second.score) {
+          second = candidate;
+        }
+      }
+    }
+    if (best && (!second || best.score - second.score >= 0.035)) return best;
+  }
+  const tip = estimateToolTip(imageData, lamp);
+  if (tip) {
+    let nearest = null;
+    let secondDistance = Infinity;
+
+    for (const originalPoint of state.layout) {
+      if (originalPoint.type === "ignore") continue;
+      if (eligibleIds && !eligibleIds.has(originalPoint.id)) continue;
+      const point = pointWithOffset(originalPoint);
+      const distanceToTip = Math.hypot(point.x - tip.x, point.y - tip.y);
+      if (!nearest || distanceToTip < nearest.distance) {
+        secondDistance = nearest?.distance ?? Infinity;
+        nearest = { id: originalPoint.id, x: point.x, y: point.y, tipX: tip.x, tipY: tip.y, score: tip.score, distance: distanceToTip, source: "rule" };
+      } else if (distanceToTip < secondDistance) {
+        secondDistance = distanceToTip;
+      }
+    }
+
+    const maxTipDistance = Math.max(42, (nearest?.r || 28) * 1.75);
+    if (nearest && nearest.distance <= maxTipDistance && (secondDistance - nearest.distance >= 8 || nearest.distance < 24)) {
+      return { ...nearest, score: tip.score + Math.max(0, 1 - nearest.distance / maxTipDistance) };
+    }
+  }
+
+  let best = null;
+  let secondScore = 0;
+  for (const originalPoint of state.layout) {
+    if (originalPoint.type === "ignore") continue;
+    if (eligibleIds && !eligibleIds.has(originalPoint.id)) continue;
+    const point = pointWithOffset(originalPoint);
+    const score = scoreToolNearPoint(point, imageData, lamp);
+    if (!best || score > best.score) {
+      secondScore = best?.score || 0;
+    best = { id: originalPoint.id, x: point.x, y: point.y, score, source: "rule" };
+    } else if (score > secondScore) {
+      secondScore = score;
+    }
+  }
+
+  if (!best || best.score < 0.08) return null;
+  if (secondScore > 0 && best.score < secondScore * 1.06) return null;
+  return best;
+}
+
+function estimateToolTip(imageData, lamp) {
+  if (!lamp?.bounds) return null;
+  const centerX = (lamp.bounds.minX + lamp.bounds.maxX) / 2;
+  const centerY = (lamp.bounds.minY + lamp.bounds.maxY) / 2;
+  const maxY = Math.min(imageData.height - 1, Math.round(centerY + imageData.height * 0.46));
+  const slopes = [-0.55, -0.4, -0.28, -0.16, 0, 0.16, 0.28, 0.4, 0.55];
+  let best = null;
+
+  for (const slope of slopes) {
+    const rows = [];
+    for (let y = Math.round(centerY + 28); y <= maxY; y += 4) {
+      const predictedX = centerX + (y - centerY) * slope;
+      let darkSamples = 0;
+      const sampleCount = 13;
+      for (let i = 0; i < sampleCount; i += 1) {
+        const x = Math.round(predictedX - 18 + (36 * i) / (sampleCount - 1));
+        if (x >= 0 && x < imageData.width && isToolPixelAt(imageData.data, imageData.width, x, y)) {
+          darkSamples += 1;
+        }
+      }
+      rows.push({ y, ratio: darkSamples / sampleCount });
+    }
+
+    let runStart = -1;
+    let runEnd = -1;
+    let longest = 0;
+    for (let i = 0; i < rows.length; i += 1) {
+      if (rows[i].ratio >= 0.15) {
+        if (runStart < 0) runStart = i;
+        runEnd = i;
+      } else if (runStart >= 0) {
+        longest = Math.max(longest, runEnd - runStart + 1);
+        runStart = -1;
+      }
+    }
+    if (runStart >= 0) longest = Math.max(longest, runEnd - runStart + 1);
+    if (longest < 7) continue;
+
+    const endIndex = rows.findIndex((row, index) => {
+      if (row.ratio < 0.15) return false;
+      let length = 0;
+      for (let j = index; j < rows.length && rows[j].ratio >= 0.15; j += 1) length += 1;
+      return length === longest;
+    });
+    if (endIndex < 0) continue;
+    const endRun = Math.min(rows.length - 1, endIndex + longest - 1);
+    const averageRatio = average(rows.slice(endIndex, endRun + 1).map((row) => row.ratio));
+    const tipY = rows[endRun].y;
+    const tipX = centerX + (tipY - centerY) * slope;
+    const score = averageRatio * 0.7 + Math.min(1, longest / 28) * 0.3;
+    if (!best || score > best.score) best = { x: tipX, y: tipY, score };
+  }
+
+  return best;
+}
+
+function getToolCandidateIds() {
+  if (els.operationMode.value === "tighten" && state.initialStatusByPoint) {
+    return new Set(
+      Object.entries(state.initialStatusByPoint)
+        .filter(([id, status]) => status === "NG" && !state.tighteningByPoint[id])
+        .map(([id]) => id),
+    );
+  }
+
+  const currentNgIds = state.visualResults
+    .filter((result) => result.status === "NG")
+    .map((result) => result.id);
+  return currentNgIds.length ? new Set(currentNgIds) : null;
+}
+
+function canPointBeTightened(pointId) {
+  const eligibleIds = getToolCandidateIds();
+  return !eligibleIds || eligibleIds.has(pointId);
+}
+
+function scoreToolNearPoint(point, imageData, lamp) {
+  const data = imageData.data;
+  const lampBounds = lamp?.bounds;
+  const lampCenter = lampBounds ? {
+    x: (lampBounds.minX + lampBounds.maxX) / 2,
+    y: (lampBounds.minY + lampBounds.maxY) / 2,
+  } : null;
+
+  if (lampCenter) {
+    const belowLamp = point.y > lampCenter.y + point.r;
+    const horizontalDistance = Math.abs(point.x - lampCenter.x);
+    const maxHorizontalDistance = Math.max(110, (point.y - lampCenter.y) * 0.55);
+    if (!belowLamp || horizontalDistance > maxHorizontalDistance) return 0;
+  }
+
+  const tip = scoreToolTipContact(point, imageData);
+  if (tip < 0.035) return 0;
+
+  const shaft = scoreToolShaftTowardPoint(point, imageData, lampCenter);
+  if (shaft < 0.035) return 0;
+
+  const extension = scoreToolExtensionBelowPoint(point, imageData, lampCenter);
+  if (extension > 0.72) return 0;
+
+  const lampBonus = lampCenter ? 0.04 : 0;
+  const endpointBonus = Math.max(0, 0.72 - extension) * 0.75;
+  return tip * 1.15 + shaft * 1.35 + endpointBonus + lampBonus;
+}
+
+function scoreToolTipContact(point, imageData) {
+  const data = imageData.data;
+  const top = Math.max(0, Math.round(point.y - point.r * 1.9));
+  const bottom = Math.min(imageData.height - 1, Math.round(point.y + point.r * 0.45));
+  const left = Math.max(0, Math.round(point.x - point.r * 0.85));
+  const right = Math.min(imageData.width - 1, Math.round(point.x + point.r * 0.85));
+  let total = 0;
+  let dark = 0;
+
+  for (let y = top; y <= bottom; y += 2) {
+    for (let x = left; x <= right; x += 2) {
+      total += 1;
+      if (isToolPixelAt(data, imageData.width, x, y)) dark += 1;
+    }
+  }
+
+  return total ? dark / total : 0;
+}
+
+function scoreToolShaftTowardPoint(point, imageData, lampCenter) {
+  const startY = Math.max(0, Math.round(point.y - point.r * 5.2));
+  const endY = Math.max(0, Math.round(point.y - point.r * 1.3));
+  let best = 0;
+  const slopeHints = lampCenter ? [(lampCenter.x - point.x) / Math.max(1, lampCenter.y - point.y)] : [-0.55, -0.35, -0.18, 0, 0.18, 0.35, 0.55];
+
+  for (const slope of slopeHints) {
+    let samples = 0;
+    let dark = 0;
+    let rowsHit = 0;
+
+    for (let y = endY; y >= startY; y -= 5) {
+      const predictedX = point.x + (y - point.y) * slope;
+      let rowHit = false;
+      for (let dx = -12; dx <= 12; dx += 3) {
+        const x = Math.round(predictedX + dx);
+        if (x < 0 || y < 0 || x >= imageData.width || y >= imageData.height) continue;
+        samples += 1;
+        if (isToolPixelAt(imageData.data, imageData.width, x, y)) {
+          dark += 1;
+          rowHit = true;
+        }
+      }
+      if (rowHit) rowsHit += 1;
+    }
+
+    if (!samples) continue;
+    const darkRatio = dark / samples;
+    const continuity = rowsHit / Math.max(1, Math.ceil((endY - startY) / 5));
+    best = Math.max(best, darkRatio * 0.65 + continuity * 0.35);
+  }
+
+  return best;
+}
+
+function scoreToolExtensionBelowPoint(point, imageData, lampCenter) {
+  const startY = Math.min(imageData.height - 1, Math.round(point.y + point.r * 0.7));
+  const endY = Math.min(imageData.height - 1, Math.round(point.y + point.r * 2.15));
+  if (endY <= startY) return 0;
+  const slopes = lampCenter
+    ? [(lampCenter.x - point.x) / Math.max(1, lampCenter.y - point.y)]
+    : [-0.45, -0.25, 0, 0.25, 0.45];
+  let best = 0;
+
+  for (const slope of slopes) {
+    let rows = 0;
+    let rowsHit = 0;
+    for (let y = startY; y <= endY; y += 4) {
+      const predictedX = point.x + (y - point.y) * slope;
+      let rowHit = false;
+      const halfWidth = Math.max(14, point.r * 0.65);
+      for (let dx = -halfWidth; dx <= halfWidth; dx += 3) {
+        const x = Math.round(predictedX + dx);
+        if (x < 0 || x >= imageData.width) continue;
+        if (isToolPixelAt(imageData.data, imageData.width, x, y)) rowHit = true;
+      }
+      rows += 1;
+      if (rowHit) rowsHit += 1;
+    }
+    best = Math.max(best, rowsHit / Math.max(1, rows));
+  }
+
+  return best;
+}
+
+function isToolPixelAt(data, width, x, y) {
+  const idx = (Math.round(y) * width + Math.round(x)) * 4;
+  const red = data[idx];
+  const green = data[idx + 1];
+  const blue = data[idx + 2];
+  const luma = pixelLuma(red, green, blue);
+  const saturationSpread = Math.max(red, green, blue) - Math.min(red, green, blue);
+  return luma < 92 && saturationSpread < 125 && !isBlueWasherPixel(red, green, blue);
+}
+
+function updateMonitorPanel() {
+  const lamp = state.liveSignal?.lamp;
+  const activePoint = state.liveSignal?.activePoint;
+  const tightenedCount = Object.keys(state.tighteningByPoint).length;
+
+  els.lampState.textContent = lamp?.label || "未检测";
+  els.lampState.className = lamp?.className || "";
+  els.activePoint.textContent = activePoint ? `${activePoint.id} (${activePoint.score.toFixed(2)})` : "-";
+  els.tightenedCount.textContent = tightenedCount;
+  els.monitorBtn.textContent = state.monitoring ? "停止监控" : "开始监控";
+
+  if (state.sourceMode !== "video") {
+    els.monitorHint.textContent = state.poseModel.session
+      ? "YOLO 枪头模型已加载。导入录像或打开摄像头后，点击开始监控。"
+      : "导入录像或打开摄像头后，点击开始监控。";
+  } else if (els.operationMode.value === "loosen") {
+    els.monitorHint.textContent = "松开测试模式：忽略红绿灯变化，不改变已拧和未拧计数。";
+  } else if (state.monitoring) {
+    const pending = Object.entries(state.initialStatusByPoint || {}).filter(([, status]) => status === "NG").length - tightenedCount;
+    els.monitorHint.textContent = `监控中：仅跟踪初始未拧点，枪头稳定且连续绿灯后确认；剩余 ${Math.max(0, pending)} 个。`;
+  } else {
+    els.monitorHint.textContent = state.poseModel.session
+      ? "YOLO 枪头模型已加载；视频已加载，可单帧重新检测，也可开始连续监控。"
+      : "视频已加载，可单帧重新检测，也可开始连续监控。";
+  }
+}
+
+function tighteningText(pointId) {
+  return state.tighteningByPoint[pointId] ? "绿灯OK" : "-";
+}
+
 function drawOverlay() {
-  if (!state.image) return;
-  ctx.drawImage(state.image, 0, 0);
+  if (!drawSourceToCanvas()) return;
   for (const originalPoint of state.layout) {
     const point = pointWithOffset(originalPoint);
     const result = state.results.find((item) => item.id === originalPoint.id);
@@ -1110,6 +1929,53 @@ function drawOverlay() {
   }
   if (els.calibrationMode.checked || state.selectedAnchorId) {
     drawCalibrationAnchors();
+  }
+  drawLiveSignalOverlay();
+}
+
+function drawLiveSignalOverlay() {
+  if (state.sourceMode !== "video" || !state.liveSignal) return;
+  const activePoint = state.liveSignal.activePoint;
+  const lamp = state.liveSignal.lamp;
+
+  if (activePoint) {
+    ctx.save();
+    if (Number.isFinite(activePoint.tipX) && Number.isFinite(activePoint.tipY)) {
+      ctx.beginPath();
+      ctx.arc(activePoint.tipX, activePoint.tipY, 10, 0, Math.PI * 2);
+      ctx.fillStyle = "#ff1744";
+      ctx.fill();
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.arc(activePoint.x, activePoint.y, 42, 0, Math.PI * 2);
+    ctx.strokeStyle = "#ffca28";
+    ctx.lineWidth = 5;
+    ctx.stroke();
+    ctx.fillStyle = "#ffca28";
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.8)";
+    ctx.lineWidth = 3;
+    ctx.font = "22px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.strokeText("枪头", activePoint.x, activePoint.y + 56);
+    ctx.fillText("枪头", activePoint.x, activePoint.y + 56);
+    ctx.restore();
+  }
+
+  if (lamp?.bounds && lamp.pixelCount > 0) {
+    ctx.save();
+    ctx.strokeStyle = lamp.status === "GREEN_OK" ? "#24a148" : "#c7352f";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(
+      lamp.bounds.minX - 8,
+      lamp.bounds.minY - 8,
+      lamp.bounds.maxX - lamp.bounds.minX + 16,
+      lamp.bounds.maxY - lamp.bounds.minY + 16,
+    );
+    ctx.restore();
   }
 }
 
@@ -1171,6 +2037,7 @@ function renderResults() {
       <td>${formatRatio(result.washerRatio || 0)}</td>
       <td>${result.centerOffsetRatio.toFixed(2)} R</td>
       <td>${signalText(result.presenceRatio)}</td>
+      <td>${tighteningText(result.id)}</td>
       <td>${result.note}</td>
     `;
     row.addEventListener("click", () => selectPoint(result.id));
@@ -1250,10 +2117,11 @@ function applyPointEdit() {
 
 function addPoint() {
   const nextNumber = String(state.layout.length + 1).padStart(2, "0");
+  const scale = sourceScale();
   const point = {
     id: `P${nextNumber}`,
-    x: Math.round(els.canvas.width / 2) - Number(els.offsetX.value || 0),
-    y: Math.round(els.canvas.height / 2) - Number(els.offsetY.value || 0),
+    x: Math.round((els.canvas.width / 2 - Number(els.offsetX.value || 0)) / scale.x),
+    y: Math.round((els.canvas.height / 2 - Number(els.offsetY.value || 0)) / scale.y),
     r: Number(els.radiusInput.value || 28),
     type: "bolt",
     expectedColor: "blackHead",
@@ -1303,6 +2171,7 @@ function snapLayoutToCurrentImage() {
 
   const offsetX = Number(els.offsetX.value || 0);
   const offsetY = Number(els.offsetY.value || 0);
+  const scale = sourceScale();
   let changed = 0;
 
   for (const point of state.layout) {
@@ -1315,8 +2184,8 @@ function snapLayoutToCurrentImage() {
     const shift = Math.hypot(found.x - displayPoint.x, found.y - displayPoint.y);
     if (shift > 34) continue;
 
-    const nextX = Math.round(found.x - offsetX);
-    const nextY = Math.round(found.y - offsetY);
+    const nextX = Math.round((found.x - offsetX) / scale.x);
+    const nextY = Math.round((found.y - offsetY) / scale.y);
     if (point.x !== nextX || point.y !== nextY) {
       point.x = nextX;
       point.y = nextY;
@@ -1380,12 +2249,72 @@ function downloadJson(filename, payload) {
   URL.revokeObjectURL(url);
 }
 
+function toggleMonitoring() {
+  if (state.monitoring) {
+    stopMonitoring();
+    setStatus("视频监控已停止", "warn");
+    return;
+  }
+  startMonitoring();
+}
+
+function startMonitoring() {
+  if (state.sourceMode !== "video" || !hasDrawableSource()) {
+    setStatus("请先导入录像或打开摄像头，再开始监控。", "warn");
+    return;
+  }
+
+  const pendingCount = state.initialStatusByPoint
+    ? Object.values(state.initialStatusByPoint).filter((status) => status === "NG").length - Object.keys(state.tighteningByPoint).length
+    : captureInitialTighteningStatus();
+  state.monitoring = true;
+  state.lastMonitorAt = 0;
+  els.videoSource.play().catch(() => {});
+  startVideoPreview();
+  updateMonitorPanel();
+  setStatus(`视频监控已开始：已锁定 ${Math.max(0, pendingCount)} 个初始未拧点，只接受枪头稳定后的连续绿灯。`, "ok");
+}
+
+function stopMonitoring() {
+  if (state.monitorFrameId) {
+    cancelAnimationFrame(state.monitorFrameId);
+    state.monitorFrameId = 0;
+  }
+  state.monitoring = false;
+  updateMonitorPanel();
+}
+
+function monitorLoop(timestamp) {
+  if (!state.monitoring) return;
+  if (timestamp - state.lastMonitorAt >= 220) {
+    state.lastMonitorAt = timestamp;
+    runInspection("视频监控中", { recordTightening: true });
+  }
+  state.monitorFrameId = requestAnimationFrame(monitorLoop);
+}
+
+function stopVideoAndKeepLastFrame() {
+  stopMonitoring();
+  stopVideoSource();
+  state.sourceMode = "image";
+  state.liveSignal = null;
+  updateMonitorPanel();
+  setStatus("视频源已停止，可重新导入图片、录像或打开摄像头。", "warn");
+}
+
 els.loadImageBtn.addEventListener("click", () => els.imageInput.click());
 els.imageInput.addEventListener("change", (event) => {
   const file = event.target.files[0];
   if (!file) return;
   const url = URL.createObjectURL(file);
   loadImage(url, file.name);
+});
+els.loadVideoBtn.addEventListener("click", () => els.videoInput.click());
+els.videoInput.addEventListener("change", (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  loadVideoFile(file);
+  event.target.value = "";
 });
 els.layoutInput.addEventListener("change", (event) => {
   const file = event.target.files[0];
@@ -1394,6 +2323,11 @@ els.layoutInput.addEventListener("change", (event) => {
   event.target.value = "";
 });
 
+els.cameraBtn.addEventListener("click", () => {
+  void startCamera();
+});
+els.monitorBtn.addEventListener("click", toggleMonitoring);
+els.stopVideoBtn.addEventListener("click", stopVideoAndKeepLastFrame);
 els.runBtn.addEventListener("click", () => runInspection("手动重新检测完成"));
 els.resetLayoutBtn.addEventListener("click", resetLayout);
 els.snapLayoutBtn.addEventListener("click", snapLayoutToCurrentImage);
@@ -1448,6 +2382,11 @@ els.autoLocateOnLoad.addEventListener("change", () => {
     runInspection("参数变化后已重新检测");
   }));
 
+els.operationMode.addEventListener("change", () => {
+  saveSettings(els.operationMode.value === "loosen" ? "已切换到松开测试模式" : "已切换到拧紧记录模式");
+  updateMonitorPanel();
+});
+
 els.canvas.addEventListener("mousedown", (event) => {
   const pos = canvasPoint(event);
   if (els.calibrationMode.checked) {
@@ -1495,9 +2434,10 @@ els.canvas.addEventListener("mousemove", (event) => {
 
   const point = state.layout.find((item) => item.id === state.selectedId);
   if (!point) return;
+  const scale = sourceScale();
   const displayPoint = {
-    x: pos.x - state.dragOffset.x - Number(els.offsetX.value || 0),
-    y: pos.y - state.dragOffset.y - Number(els.offsetY.value || 0),
+    x: (pos.x - state.dragOffset.x - Number(els.offsetX.value || 0)) / scale.x,
+    y: (pos.y - state.dragOffset.y - Number(els.offsetY.value || 0)) / scale.y,
   };
   point.x = Math.round(displayPoint.x);
   point.y = Math.round(displayPoint.y);
@@ -1522,3 +2462,6 @@ window.addEventListener("mouseup", () => {
 
 applySavedSettings();
 loadImage("./assets/sample-board.png", "sample-board.png");
+void loadPoseModel().then(() => {
+  if (state.sourceMode === "image" && state.image) runInspection("YOLO 枪头模型已加载");
+});

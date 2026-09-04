@@ -15,14 +15,20 @@
         </div>
         <div class="actions">
           <input id="imageInput" type="file" accept="image/*" hidden />
+          <input id="videoInput" type="file" accept="video/*" hidden />
           <input id="layoutInput" type="file" accept="application/json,.json" hidden />
           <button id="loadImageBtn" type="button">导入图片</button>
+          <button id="loadVideoBtn" type="button">导入录像</button>
+          <button id="cameraBtn" type="button">打开摄像头</button>
+          <button id="monitorBtn" type="button">开始监控</button>
+          <button id="stopVideoBtn" type="button">停止视频</button>
           <button id="runBtn" type="button">重新检测</button>
           <button id="resetLayoutBtn" type="button">恢复默认</button>
           <button id="snapLayoutBtn" type="button">按当前图校准点位</button>
           <button id="openLayoutBtn" type="button">打开点位文件</button>
           <button id="saveLayoutFileBtn" type="button">保存点位文件</button>
           <button id="exportResultBtn" type="button">导出结果</button>
+          <a class="tool-link" href="./annotator.html">打开枪头标注</a>
         </div>
       </header>
       <div id="statusText" class="status-line">正在加载样图...</div>
@@ -58,11 +64,29 @@
             </label>
           </div>
           <div class="canvas-wrap">
+            <video id="videoSource" playsinline muted hidden></video>
             <canvas id="imageCanvas"></canvas>
           </div>
         </div>
 
         <aside class="side-panel">
+          <section class="panel-section monitor-section">
+            <h2>视频监控</h2>
+            <div class="summary-grid">
+              <span>灯号</span><strong id="lampState">未检测</strong>
+              <span>枪头点位</span><strong id="activePoint">-</strong>
+              <span>绿灯确认</span><strong id="tightenedCount">0</strong>
+            </div>
+            <label class="wide-field">
+              作业模式
+              <select id="operationMode">
+                <option value="tighten">拧紧记录</option>
+                <option value="loosen">松开测试</option>
+              </select>
+            </label>
+            <p id="monitorHint" class="hint-text">导入录像或打开摄像头后，点击开始监控。</p>
+          </section>
+
           <section class="panel-section">
             <h2>当前点位</h2>
             <div id="selectedFields" class="field-grid">
@@ -159,6 +183,7 @@
                 <th>垫片占比</th>
                 <th>偏心</th>
                 <th>强度</th>
+                <th>拧紧枪OK</th>
                 <th>说明</th>
               </tr>
             </thead>
@@ -168,6 +193,7 @@
       </section>
     </main>
 
+    <script src="./vendor/onnxruntime-web/ort.min.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

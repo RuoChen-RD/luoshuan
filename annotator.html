@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>枪头关键点标注</title>
+    <link rel="stylesheet" href="./annotator.css" />
+  </head>
+  <body>
+    <main class="annotator-shell">
+      <header class="annotator-header">
+        <div>
+          <h1>枪头关键点标注</h1>
+          <p>每张图画枪体框，再点击批头真正接触螺丝的位置。</p>
+        </div>
+        <nav><a href="./index.html">返回检测页面</a></nav>
+      </header>
+
+      <section class="toolbar">
+        <input id="imageFiles" type="file" accept="image/*" multiple hidden />
+        <input id="imageFolder" type="file" accept="image/*" webkitdirectory directory multiple hidden />
+        <button id="loadProjectFrames" type="button">加载拧紧视频抽帧</button>
+        <button id="loadFiles" type="button">导入图片</button>
+        <button id="loadFolder" type="button">导入图片文件夹</button>
+        <label>数据集<select id="split"><option value="train">train</option><option value="val">val</option></select></label>
+        <button id="negative" type="button">标记负样本</button>
+        <button id="clearLabel" type="button">清空当前标注</button>
+        <button id="saveProject" type="button">导出标注项目</button>
+        <button id="exportLabels" type="button">导出 YOLO 标签</button>
+      </section>
+
+      <div id="status" class="status">正在加载项目抽帧...</div>
+
+      <section class="workspace">
+        <div class="canvas-panel">
+          <div class="canvas-wrap"><canvas id="canvas"></canvas></div>
+          <div class="legend"><span class="box-key">框</span> 拖动绘制枪体框 <span class="point-key">点</span> 点击批头末端</div>
+        </div>
+        <aside class="side-panel">
+          <div class="progress"><strong id="filename">-</strong><span id="counter">0 / 0</span></div>
+          <div class="thumbs" id="thumbs"></div>
+          <div class="instructions">
+            <h2>标注步骤</h2>
+            <ol><li>在图片上拖动，框住可见的枪体、枪杆或枪头。</li><li>框画好后，在批头最末端单击。</li><li>只有枪头露出但末端清楚时仍要标注。</li><li>末端无法判断时点“标记负样本”。</li><li>按 ←/→ 切换图片，标注会自动保存。</li></ol>
+          </div>
+          <div class="current-label" id="currentLabel">当前：未标注</div>
+        </aside>
+      </section>
+    </main>
+    <script src="./annotator.js"></script>
+  </body>
+</html>
